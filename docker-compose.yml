@@ -9,8 +9,8 @@ services:
         working_dir: /usr/src/smart-brain-api
         environment: 
             POSTGRRES_URI: postgres://jeremy:root@postgres:5432/smart-brain-docker
-        links: 
-            - postgres
+        # links: 
+        #     - postgres
         ports:
             - "3000:3000"
         volumes: 
