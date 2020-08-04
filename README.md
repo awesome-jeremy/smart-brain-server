@@ -6,9 +6,12 @@ Detect human faces in a picture.
 Tech Stack:
 
 1. Express
-2. Postgres, Knex
-3. bcrypt
-4. Clarifai API - for AI face recognition
+2. PostgreSQL, Knex
+3. Clarifai API - for AI face recognition
+4. bcrypt
+5. jsonwebtoken
+6. Redis
+7. Docker
 
 
 
