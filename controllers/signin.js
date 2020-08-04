@@ -1,26 +1,59 @@
-const handleSignin = (db, bcrypt) => (req, res) => {
+const jwt = require('jsonwebtoken');
+
+//checkPassword is a helper function that reture a promise
+const checkPassword = (db, bcrypt, req, res) => {
   const { email, password } = req.body;
   if (!email || !password) {
-    return res.status(400).json('incorrect form submission');
+    return Promise.reject('incorrect form submission');
   }
-  db.select('email', 'hash').from('login')
+
+  return db.select('email', 'hash').from('login')
     .where('email', '=', email)
     .then(data => {
       const isValid = bcrypt.compareSync(password, data[0].hash);
       if (isValid) {
         return db.select('*').from('users')
           .where('email', '=', email)
-          .then(user => {
-            res.json(user[0])
-          })
-          .catch(err => res.status(400).json('unable to get user'))
+          .then(user => user[0])
+          .catch(err => Promise.reject('unable to get user'))
       } else {
-        res.status(400).json('wrong credentials')
+        Promise.reject('wrong credentials')
       }
     })
-    .catch(err => res.status(400).json('wrong credentials'))
+    .catch(err => Promise.reject('wrong credentials'))
+}
+
+//write function that does not exist, just to build step by step
+const getAuthTokenId = () => {
+  console.log('auth ok');
+}
+
+//keep function small and clean
+//good for unit test
+signToken = (email) => {
+  const payload = { email };
+  const token = jwt.sign(payload, "JWT_SECRET", { expiresIn: "1 day" });
+  return token;
+}
+
+createSessions = (user) => {
+  const { id, email } = user;
+  const token = signToken(email);
+  return { success: "true", userId: id, token: token }
+}
+
+// dependency injection
+handleSigninAuthentication = (db, bcrypt) => (req, res) => {
+  const { authorization } = req.headers;
+  return authorization ? getAuthTokenId() :
+    checkPassword(db, bcrypt, req, res)
+      .then(data => {
+        return data.id && data.email ? createSessions(data) : Promise.reject(data);
+      })
+      .then(session => res.json(session))
+      .catch(err => res.status(400).json(err))
 }
 
 module.exports = {
-  handleSignin: handleSignin
+  handleSigninAuthentication: handleSigninAuthentication
 }
