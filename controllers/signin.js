@@ -2,7 +2,7 @@ const jwt = require('jsonwebtoken');
 const redis = require("redis");
 
 //setup redis
-const client = redis.createClient(process.env.REDIS_URI);
+const redisClient = redis.createClient(process.env.REDIS_URI);
 
 //checkPassword is a helper function that reture a promise
 const checkPassword = (db, bcrypt, req, res) => {
@@ -27,9 +27,17 @@ const checkPassword = (db, bcrypt, req, res) => {
     .catch(err => Promise.reject('wrong credentials'))
 }
 
-//write function that does not exist, just to build step by step
-const getAuthTokenId = () => {
-  console.log('auth ok');
+//get id by token, from redis
+const getAuthTokenId = (req, res) => {
+  const { authorization } = req.headers;
+  redisClient.get(authorization, (err, reply) => {
+    if (err || !reply) {
+      return res.status(400).json("Unauthorized!");
+    } else {
+      return res.json({ id: reply })
+    }
+  })
+
 }
 
 //keep function small and clean
@@ -40,16 +48,23 @@ signToken = (email) => {
   return token;
 }
 
+setToken = (token, id) => {
+  return Promise.resolve(redisClient.set(token, id));
+}
+
 createSessions = (user) => {
   const { id, email } = user;
   const token = signToken(email);
-  return { success: "true", userId: id, token: token }
+
+  return setToken(token, id)
+    .then(() => ({ success: "true", userId: id, token: token }))
+    .catch((err) => console.log(err))
 }
 
 // dependency injection
 handleSigninAuthentication = (db, bcrypt) => (req, res) => {
   const { authorization } = req.headers;
-  return authorization ? getAuthTokenId() :
+  return authorization ? getAuthTokenId(req, res) :
     checkPassword(db, bcrypt, req, res)
       .then(data => {
         return data.id && data.email ? createSessions(data) : Promise.reject(data);
