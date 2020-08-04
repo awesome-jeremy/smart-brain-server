@@ -1,4 +1,8 @@
 const jwt = require('jsonwebtoken');
+const redis = require("redis");
+
+//setup redis
+const client = redis.createClient(process.env.REDIS_URI);
 
 //checkPassword is a helper function that reture a promise
 const checkPassword = (db, bcrypt, req, res) => {
