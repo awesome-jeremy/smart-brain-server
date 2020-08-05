@@ -70,9 +70,10 @@ handleSigninAuthentication = (db, bcrypt) => (req, res) => {
         return data.id && data.email ? createSessions(data) : Promise.reject(data);
       })
       .then(session => res.json(session))
-      .catch(err => res.status(400).json(err))
+      .catch(err => { console.log(err);res.status(400).json(err)})
 }
 
 module.exports = {
-  handleSigninAuthentication: handleSigninAuthentication
+  handleSigninAuthentication: handleSigninAuthentication,
+  redisClient:redisClient
 }
